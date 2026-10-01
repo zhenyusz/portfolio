@@ -1,0 +1,1088 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>From Signals to Insight: Amazon Marketing Cloud</title>
+  <meta name="description" content="An instructional motion graphic concept that explains how Amazon Marketing Cloud connects privacy-safe signals to aggregate insight, audiences, and campaign activation.">
+  <style>
+/* From Signals to Insight: Amazon Marketing Cloud
+   Styles for a fixed 1920 x 1080 stage. All positions inside the stage use
+   stage pixels; script.js scales the whole stage to fit the window. */
+
+:root {
+  --bg: #F7F8FA;
+  --ink: #1F2933;
+  --muted: #52606D;
+  --line: #D9E2EC;
+  --surface: #FFFFFF;
+  --blue: #2563EB;
+  --blue-tint: #DBEAFE;
+  --teal: #0F766E;
+  --teal-tint: #CCFBF1;
+  --orange: #EA580C;
+  --orange-ink: #C2410C; /* darker orange for text and thin strokes (AA contrast) */
+  --orange-tint: #FFEDD5;
+  --slate: #616E7C;
+  --slate-tint: #E4E7EB;
+  --ease: cubic-bezier(.22, .8, .24, 1);
+  --font: "Inter", system-ui, -apple-system, "Segoe UI", Roboto, "Helvetica Neue", Arial, sans-serif;
+  --mono: ui-monospace, "SF Mono", Menlo, Consolas, "Liberation Mono", monospace;
+}
+
+* { box-sizing: border-box; }
+html, body { margin: 0; height: 100%; overflow: hidden; background: #E4E7EB; color: var(--ink); font-family: var(--font); }
+body.idle, body.record { cursor: none; }
+.sprite { position: absolute; width: 0; height: 0; overflow: hidden; }
+.sr-only { position: absolute; width: 1px; height: 1px; padding: 0; margin: -1px; overflow: hidden; clip: rect(0 0 0 0); white-space: nowrap; border: 0; }
+
+.ico { width: 32px; height: 32px; flex: none; fill: none; stroke: currentColor; stroke-width: 1.8; stroke-linecap: round; stroke-linejoin: round; }
+
+/* ---------- Stage ---------- */
+.viewport { position: fixed; inset: 0; }
+.stage {
+  position: absolute; left: 50%; top: 50%;
+  width: 1920px; height: 1080px;
+  transform: translate(-50%, -50%) scale(var(--scale, 1));
+  background: var(--bg); overflow: hidden;
+  box-shadow: 0 10px 40px rgba(31, 41, 51, .12);
+}
+.stage :where(p, h2, figure, ul, ol) { margin: 0; padding: 0; }
+.stage :where(ul, ol) { list-style: none; }
+
+.scene-count { position: absolute; top: 78px; right: 160px; font-size: 24px; font-weight: 600; color: var(--muted); z-index: 2; }
+
+/* Scenes cross-fade. Only the active scene is visible and exposed to assistive tech. */
+.scene { position: absolute; inset: 0; opacity: 0; visibility: hidden; transition: opacity .6s ease, visibility 0s linear .6s; }
+.scene.is-active { opacity: 1; visibility: visible; transition: opacity .6s ease .15s; }
+.scene > * { position: absolute; }
+.fill { left: 0; top: 0; width: 1920px; height: 1080px; pointer-events: none; }
+.layer { left: 0; top: 0; width: 1920px; height: 1080px; overflow: visible; }
+
+.eyebrow { left: 160px; top: 70px; font-size: 26px; font-weight: 700; color: var(--teal); letter-spacing: .06em; text-transform: uppercase; }
+.eyebrow span { color: var(--blue); margin-right: 12px; }
+.headline { left: 160px; top: 112px; width: 1600px; white-space: nowrap; font-size: 72px; line-height: 1.15; font-weight: 750; letter-spacing: -.02em; }
+
+/* ---------- Beats: progressive disclosure ----------
+   Any element with data-at="seconds" gets the class "in" once the scene's
+   local time passes that value (and loses it at data-out, if set). */
+.beat { opacity: 0; transition: opacity .6s ease, transform .75s var(--ease); }
+.beat.rise { transform: translateY(28px); }
+.beat.left { transform: translateX(-36px); }
+.beat.pop { transform: scale(.82); }
+.beat.from-center { transform: translateX(var(--fx, 0)) scale(.6); }
+.beat.in { opacity: 1; transform: none; }
+
+/* SVG strokes that draw on (paths use pathLength="1") */
+.beat.draw { stroke-dasharray: 1; stroke-dashoffset: 1; transition: opacity .3s ease, stroke-dashoffset 1.3s var(--ease); }
+.beat.draw.slow { transition: opacity .3s ease, stroke-dashoffset 2.2s var(--ease); }
+.beat.draw.in { stroke-dashoffset: 0; }
+
+/* Pause freezes every keyframe animation on the stage */
+.stage.is-paused *, .stage.is-paused *::before, .stage.is-paused *::after { animation-play-state: paused !important; }
+
+/* ---------- Shared pieces ---------- */
+.icon-badge { width: 60px; height: 60px; border-radius: 18px; display: grid; place-items: center; flex: none; }
+.icon-badge .ico { width: 34px; height: 34px; }
+.blue   { background: var(--blue-tint);   color: var(--blue); }
+.teal   { background: var(--teal-tint);   color: var(--teal); }
+.orange { background: var(--orange-tint); color: var(--orange-ink); }
+.slate  { background: var(--slate-tint);  color: var(--slate); }
+
+.dot { position: absolute; border-radius: 50%; }
+
+/* Particles travel along stream paths (CSS offset-path set in script.js) */
+.particles { position: absolute; inset: 0; opacity: 0; transition: opacity .4s ease; }
+.particles.in { opacity: 1; }
+.particle {
+  position: absolute; left: 0; top: 0; width: 16px; height: 16px; border-radius: 50%;
+  background: var(--c); box-shadow: 0 0 0 5px color-mix(in srgb, var(--c) 18%, transparent);
+  offset-rotate: 0deg; offset-distance: 0%; opacity: 0;
+}
+.particles.in .particle { animation-name: travel; animation-timing-function: cubic-bezier(.45, 0, .55, 1); animation-iteration-count: infinite; }
+@keyframes travel {
+  0%   { offset-distance: 0%;   opacity: 0; }
+  12%  { opacity: 1; }
+  85%  { opacity: 1; }
+  100% { offset-distance: 100%; opacity: 0; }
+}
+
+.stream { fill: none; stroke: var(--c); stroke-width: 6; stroke-linecap: round; opacity: .9; }
+.stream.thin { stroke-width: 4; }
+
+/* ---------- Scene 1: The question ---------- */
+.broken-links line { stroke: #9AA5B1; stroke-width: 3; stroke-dasharray: 8 12; stroke-linecap: round; }
+.dot.drift-out.in { animation: driftOut var(--dur, 6s) ease-out forwards; }
+@keyframes driftOut { from { transform: translate(0, 0); } to { transform: translate(var(--dx), var(--dy)); } }
+
+.marketer { left: 860px; top: 460px; width: 200px; display: flex; flex-direction: column; align-items: center; gap: 14px; }
+.marketer-badge { width: 200px; height: 200px; border-radius: 50%; background: var(--blue-tint); color: var(--blue); display: grid; place-items: center; border: 4px solid #fff; box-shadow: 0 0 0 3px var(--blue-tint), 0 18px 40px rgba(37, 99, 235, .18); }
+.marketer-badge .ico { width: 110px; height: 110px; stroke-width: 1.6; }
+.marketer-label { font-size: 28px; font-weight: 700; }
+
+.chip-wrap { position: absolute; }
+.chip {
+  position: relative; display: flex; align-items: center; gap: 18px;
+  width: 350px; height: 92px; padding: 0 20px; white-space: nowrap;
+  background: var(--surface); border: 2px solid var(--line); border-radius: 22px;
+  font-size: 26px; font-weight: 600; box-shadow: 0 10px 28px rgba(31, 41, 51, .08);
+}
+.chip-wrap.in .chip { animation: driftOut 6s ease-out .4s forwards; }
+.qmark { position: absolute; top: -30px; right: -16px; width: 52px; height: 52px; border-radius: 50%; background: var(--orange); color: #fff; font-size: 32px; font-weight: 800; display: grid; place-items: center; box-shadow: 0 6px 16px rgba(234, 88, 12, .3); }
+.qmark.in span { animation: bob 1.8s ease-in-out infinite; display: block; }
+@keyframes bob { 0%, 100% { transform: translateY(0); } 50% { transform: translateY(-5px); } }
+
+/* ---------- Scene 2: Bring the data together ---------- */
+.source {
+  position: absolute; left: 160px; width: 470px; height: 110px;
+  display: flex; align-items: center; gap: 20px; padding: 0 24px;
+  background: var(--surface); border: 2px solid var(--line); border-radius: 24px;
+  font-size: 28px; font-weight: 650; line-height: 1.2; box-shadow: 0 10px 28px rgba(31, 41, 51, .07);
+}
+.dot.absorb.in { animation: absorb 1.5s cubic-bezier(.55, 0, .6, 1) var(--d) both; }
+@keyframes absorb {
+  0%   { opacity: 1; transform: translate(0, 0); }
+  80%  { opacity: 1; }
+  100% { opacity: 0; transform: translate(var(--tx), var(--ty)) scale(.4); }
+}
+.cloud { left: 980px; top: 345px; width: 640px; height: 420px; transform-origin: 50% 60%; }
+.cloud svg, .zoom-cloud svg { width: 100%; height: 100%; display: block; overflow: visible; }
+.cloud-shape { fill: var(--surface); stroke: var(--blue); stroke-width: 5; filter: drop-shadow(0 18px 30px rgba(37, 99, 235, .14)); }
+.cloud-text { position: absolute; left: 0; right: 0; top: 165px; text-align: center; display: flex; flex-direction: column; align-items: center; gap: 4px; }
+.cloud-text strong { font-size: 96px; line-height: 1; font-weight: 800; color: var(--blue); letter-spacing: .02em; }
+.cloud-text span { font-size: 28px; font-weight: 600; color: var(--muted); }
+.halo { fill: none; stroke: var(--teal); stroke-width: 3; stroke-dasharray: 14 12; }
+.halo.in { animation: march 8s linear infinite; }
+@keyframes march { to { stroke-dashoffset: -260; } }
+.shield-pill { left: 1470px; top: 300px; white-space: nowrap; display: flex; align-items: center; gap: 12px; padding: 14px 26px 14px 20px; border-radius: 40px; background: var(--teal); color: #fff; font-size: 28px; font-weight: 700; box-shadow: 0 10px 24px rgba(15, 118, 110, .28); }
+.shield-pill .ico { width: 40px; height: 40px; stroke-width: 2; }
+
+/* ---------- Scene 3: Analyze safely ---------- */
+.zoom-cloud { left: 980px; top: 345px; width: 640px; height: 420px; transform-origin: 50% 58%; }
+.beat.zoom.in { animation: zoomThrough 1.5s cubic-bezier(.55, 0, .75, .2) both; }
+@keyframes zoomThrough { 0% { opacity: 1; transform: scale(1); } 100% { opacity: 0; transform: scale(4.2); } }
+
+.room { left: 120px; top: 262px; width: 1680px; height: 598px; border-radius: 36px; background: #EEF4FF; border: 2px dashed #7EA2EE; }
+.room-tag { left: 720px; top: 236px; width: 480px; white-space: nowrap; height: 52px; display: flex; align-items: center; justify-content: center; gap: 10px; border-radius: 26px; background: var(--blue); color: #fff; font-size: 24px; font-weight: 700; }
+.room-tag .ico { width: 28px; height: 28px; stroke-width: 2.2; }
+.col-title { top: 300px; font-size: 26px; font-weight: 700; color: var(--ink); }
+
+.halo-blob { position: absolute; width: 170px; height: 170px; border-radius: 50%; background: var(--c); opacity: 0; transform: scale(.6); transition: opacity .8s ease .9s, transform 1s var(--ease) .9s; }
+.cluster-field.is-grouped .halo-blob { opacity: 1; transform: none; }
+.cdot {
+  position: absolute; left: -8px; top: -8px; width: 16px; height: 16px; border-radius: 50%;
+  background: #9AA5B1; transform: translate(var(--x0), var(--y0));
+  transition: transform 1.4s var(--ease), background-color .6s ease .8s;
+}
+.cluster-field.is-grouped .cdot { transform: translate(var(--x1), var(--y1)); background: var(--c); }
+.cluster-label { transform: translateX(-50%); font-size: 24px; font-weight: 700; padding: 4px 14px; border-radius: 14px; background: var(--surface); border: 1.5px solid var(--line); }
+.cluster-label.beat, .cluster-label.beat.in { transform: translateX(-50%); }
+
+.col-arrow { width: 44px; height: 44px; color: #7B8794; stroke-width: 2.4; }
+
+.query-card { left: 770px; top: 350px; width: 400px; height: 470px; padding: 30px; background: var(--surface); border: 2px solid var(--line); border-radius: 24px; display: flex; flex-direction: column; gap: 22px; box-shadow: 0 12px 30px rgba(31, 41, 51, .08); }
+.code { display: flex; flex-direction: column; gap: 12px; font-family: var(--mono); font-size: 25px; line-height: 1.3; padding: 20px; border-radius: 14px; background: #F1F4F8; min-height: 236px; }
+.code-line { display: block; white-space: pre; }
+.code-line.indent { padding-left: 28px; }
+.code b { color: var(--blue); font-weight: 700; }
+.run-btn { align-self: flex-start; display: inline-flex; align-items: center; gap: 10px; padding: 12px 24px; border-radius: 14px; background: var(--blue); color: #fff; font-size: 26px; font-weight: 700; }
+.run-btn .ico { width: 24px; height: 24px; fill: #fff; stroke: #fff; }
+.run-btn.in { animation: pulse 1.2s ease-out .25s 1; }
+@keyframes pulse { 0% { box-shadow: 0 0 0 0 rgba(37, 99, 235, .45); } 100% { box-shadow: 0 0 0 22px rgba(37, 99, 235, 0); } }
+.status { display: flex; align-items: center; gap: 10px; font-size: 24px; font-weight: 650; color: var(--teal); }
+.status .ico { width: 30px; height: 30px; stroke-width: 2.6; }
+
+.chart-card { left: 1230px; top: 350px; width: 530px; height: 470px; padding: 30px 40px 26px; background: var(--surface); border: 2px solid var(--line); border-radius: 24px; display: flex; flex-direction: column; gap: 22px; box-shadow: 0 12px 30px rgba(31, 41, 51, .08); }
+.bars, .bar-labels { display: grid; grid-template-columns: repeat(3, 1fr); gap: 36px; }
+.bars { height: 272px; align-items: end; border-bottom: 2px solid var(--line); }
+.bar-col { display: flex; flex-direction: column; align-items: center; justify-content: flex-end; }
+.bar-val { font-size: 26px; font-weight: 750; margin-bottom: 8px; }
+.bar { display: block; width: 92px; border-radius: 12px 12px 0 0; background: var(--c); transform-origin: bottom; }
+.bar.beat { transform: scaleY(0); transition: opacity .3s ease, transform 1s var(--ease); }
+.bar.beat.in { transform: none; }
+.bar-labels { margin-top: -8px; text-align: center; font-size: 24px; font-weight: 600; color: var(--muted); }
+.privacy-chip { margin-top: auto; align-self: center; white-space: nowrap; display: flex; align-items: center; gap: 8px; padding: 8px 16px; border-radius: 30px; background: var(--teal-tint); color: #0B5D57; font-size: 24px; font-weight: 700; }
+.privacy-chip .ico { width: 30px; height: 30px; stroke-width: 2; }
+
+/* ---------- Scene 4: Turn insight into action ---------- */
+.chart-glyph { left: 905px; top: 275px; width: 110px; height: 110px; border-radius: 30px; background: var(--blue); color: #fff; display: grid; place-items: center; }
+.chart-glyph .ico { width: 64px; height: 64px; stroke-width: 2.2; }
+
+.insight-card {
+  position: absolute; top: 260px; width: 460px; height: 150px;
+  display: flex; align-items: center; gap: 22px; padding: 0 28px;
+  background: var(--surface); border: 2.5px solid var(--line); border-radius: 26px;
+  box-shadow: 0 12px 30px rgba(31, 41, 51, .08);
+  transition: opacity .6s ease, transform .8s var(--ease), border-color .4s ease, box-shadow .4s ease;
+}
+.insight-card strong { display: block; font-size: 30px; font-weight: 750; line-height: 1.2; }
+.insight-card small { display: block; font-size: 24px; color: var(--muted); line-height: 1.3; margin-top: 4px; }
+.insights.is-focus .insight-card { opacity: .4; }
+.insights.is-focus .insight-card.is-key { opacity: 1; transform: translateY(-6px) scale(1.05); border-color: var(--orange); box-shadow: 0 18px 40px rgba(234, 88, 12, .2); }
+
+.link { fill: none; stroke: var(--orange); stroke-width: 4; stroke-linecap: round; }
+.audience { left: 890px; top: 472px; width: 140px; height: 140px; border-radius: 50%; background: var(--orange-tint); color: var(--orange-ink); border: 4px solid var(--orange); display: grid; place-items: center; box-shadow: 0 14px 34px rgba(234, 88, 12, .22); }
+.audience .ico { width: 76px; height: 76px; stroke-width: 1.7; }
+.audience-label { left: 1056px; top: 520px; font-size: 30px; font-weight: 750; color: var(--orange-ink); }
+
+.campaign { position: absolute; top: 712px; width: 300px; display: flex; flex-direction: column; align-items: center; gap: 12px; font-size: 26px; font-weight: 650; text-align: center; }
+.campaign-icon { position: relative; width: 96px; height: 96px; border-radius: 28px; background: var(--surface); border: 2.5px solid var(--line); color: var(--blue); display: grid; place-items: center; box-shadow: 0 10px 24px rgba(31, 41, 51, .08); }
+.campaign-icon .ico { width: 52px; height: 52px; }
+.tick { position: absolute; top: -12px; right: -12px; width: 38px; height: 38px; border-radius: 50%; background: var(--teal); color: #fff; display: grid; place-items: center; }
+.tick .ico { width: 24px; height: 24px; stroke-width: 3; }
+
+/* ---------- Scene 5: Keep improving ---------- */
+.loop-track { fill: none; stroke: var(--line); stroke-width: 12; }
+.loop-arc { fill: none; stroke: var(--blue); stroke-width: 6; stroke-linecap: round; }
+.chevrons path { fill: none; stroke: var(--blue); stroke-width: 5; stroke-linecap: round; stroke-linejoin: round; }
+.orbit circle { fill: var(--orange); stroke: #fff; stroke-width: 4; }
+.orbit { transform-box: view-box; transform-origin: 560px 560px; }
+.orbit.in { animation: spin 6s linear infinite; }
+@keyframes spin { to { transform: rotate(360deg); } }
+
+.loop-center { left: 410px; top: 508px; width: 300px; display: flex; flex-direction: column; align-items: center; }
+.loop-center strong { font-size: 52px; font-weight: 800; color: var(--blue); line-height: 1.05; }
+.loop-center span { font-size: 26px; font-weight: 600; color: var(--muted); }
+
+.loop-node {
+  position: absolute; width: 230px; height: 68px;
+  display: flex; align-items: center; justify-content: center; gap: 12px;
+  background: var(--surface); border: 3px solid var(--line); border-radius: 34px;
+  font-size: 28px; font-weight: 700; box-shadow: 0 8px 22px rgba(31, 41, 51, .08);
+}
+.loop-node .ico { color: var(--c); width: 32px; height: 32px; stroke-width: 2.1; }
+/* Each node glows as the orbiting marker passes (6s loop, 1.5s per step) */
+.loop-node.is-live { animation: nodeGlow 6s linear calc(var(--i) * 1.5s) infinite; }
+@keyframes nodeGlow {
+  0%, 20% { border-color: var(--c); box-shadow: 0 0 0 8px color-mix(in srgb, var(--c) 16%, transparent); }
+  32%, 100% { border-color: var(--line); box-shadow: 0 8px 22px rgba(31, 41, 51, .08); }
+}
+
+.dashboard { left: 1000px; top: 270px; width: 760px; height: 570px; padding: 30px 32px 22px; background: var(--surface); border: 2px solid var(--line); border-radius: 28px; display: flex; flex-direction: column; gap: 20px; box-shadow: 0 14px 34px rgba(31, 41, 51, .08); }
+.dash-head { display: flex; align-items: center; justify-content: space-between; }
+.dash-head strong { font-size: 30px; font-weight: 750; }
+.tag { font-size: 24px; font-weight: 600; color: var(--muted); padding: 4px 14px; border-radius: 14px; background: #F1F4F8; }
+.kpis { display: grid; grid-template-columns: repeat(3, 1fr); gap: 18px; }
+.kpi { padding: 16px 20px; border-radius: 18px; background: #F5F8FB; border: 1.5px solid var(--line); display: flex; flex-direction: column; gap: 4px; }
+.kpi span { font-size: 24px; color: var(--muted); font-weight: 600; }
+.kpi b { display: flex; align-items: center; gap: 6px; font-size: 40px; font-weight: 800; color: var(--teal); }
+.kpi b .ico { width: 30px; height: 30px; stroke-width: 3; }
+.trend { width: 100%; flex: 1; overflow: visible; }
+.grid line { stroke: #E4E9EF; stroke-width: 2; }
+.trend-area { fill: rgba(37, 99, 235, .1); }
+.trend-line { fill: none; stroke: var(--blue); stroke-width: 6; stroke-linecap: round; stroke-linejoin: round; }
+.trend-end { fill: var(--orange); stroke: #fff; stroke-width: 4; }
+.axis-note { font-size: 24px; color: var(--muted); text-align: right; }
+
+/* ---------- Scene 6: Closing ---------- */
+.flow-pill {
+  position: absolute; top: 250px; width: 280px; height: 100px;
+  display: flex; align-items: center; justify-content: center; gap: 14px;
+  border-radius: 50px; background: var(--c); color: #fff; font-size: 36px; font-weight: 800;
+  box-shadow: 0 14px 30px color-mix(in srgb, var(--c) 30%, transparent);
+}
+.flow-pill .ico { width: 40px; height: 40px; stroke-width: 2.2; }
+.flow-arrow { top: 272px; width: 56px; height: 56px; color: #7B8794; stroke-width: 2.4; }
+.closing-title { left: 0; top: 420px; width: 1920px; text-align: center; font-size: 76px; line-height: 1.18; font-weight: 800; letter-spacing: -.02em; }
+.closing-title span { display: block; }
+.closing-title .accent { color: var(--blue); }
+.closing-sub { left: 0; top: 632px; width: 1920px; text-align: center; font-size: 40px; font-weight: 700; color: var(--teal); }
+.closing-credit { left: 0; top: 704px; width: 1920px; text-align: center; font-size: 28px; font-weight: 600; }
+.closing-note { left: 0; top: 750px; width: 1920px; text-align: center; font-size: 24px; color: var(--muted); }
+
+/* ---------- Captions ---------- */
+.captions { position: absolute; left: 160px; right: 160px; bottom: 44px; display: flex; justify-content: center; pointer-events: none; z-index: 3; transition: opacity .3s ease; }
+.captions p { margin: 0; max-width: 1600px; padding: 18px 34px; border-radius: 16px; background: rgba(31, 41, 51, .94); color: #fff; font-size: 30px; line-height: 1.42; font-weight: 500; text-align: center; }
+.captions p:empty { display: none; }
+.captions.swap p { animation: capIn .45s ease both; }
+@keyframes capIn { from { opacity: 0; transform: translateY(8px); } to { opacity: 1; transform: none; } }
+.stage.captions-off .captions { opacity: 0; }
+
+/* ---------- Progress bar ---------- */
+.progress { position: absolute; left: 0; right: 0; bottom: 0; height: 12px; background: #E1E6EC; z-index: 3; }
+.progress-fill { position: absolute; inset: 0; background: linear-gradient(90deg, var(--blue), var(--teal)); transform-origin: left center; transform: scaleX(0); }
+.progress-tick { position: absolute; top: 0; bottom: 0; width: 4px; margin-left: -2px; background: var(--bg); }
+
+/* ---------- Controls (outside the stage) ---------- */
+.controls {
+  position: fixed; top: 16px; right: 16px; z-index: 10;
+  display: flex; align-items: center; gap: 8px; padding: 8px;
+  background: rgba(255, 255, 255, .96); border: 1px solid #CBD2D9; border-radius: 14px;
+  box-shadow: 0 8px 24px rgba(31, 41, 51, .14); transition: opacity .3s ease;
+}
+.controls.is-idle:not(:focus-within) { opacity: 0; }
+.controls button {
+  display: inline-flex; align-items: center; gap: 6px; min-height: 40px; padding: 8px 14px;
+  font: 600 15px/1 var(--font); color: var(--ink); background: #fff;
+  border: 1px solid #CBD2D9; border-radius: 10px; cursor: pointer;
+}
+.controls button:hover { background: #F1F4F8; }
+.controls button:focus-visible { outline: 3px solid var(--blue); outline-offset: 2px; }
+.controls button[aria-pressed="false"] { color: var(--muted); text-decoration: line-through; }
+.controls .ico { width: 18px; height: 18px; stroke-width: 2.2; }
+#btn-play .ico { fill: currentColor; }
+.time { padding: 0 8px; font: 600 15px var(--font); font-variant-numeric: tabular-nums; color: var(--muted); }
+body.record .controls { display: none; }
+body.record .stage { box-shadow: none; }
+
+/* ---------- Reduced motion ----------
+   Keep the same content and timing, but replace movement with simple fades. */
+@media (prefers-reduced-motion: reduce) {
+  .beat, .insight-card, .bar.beat { transform: none !important; transition: opacity .5s ease !important; }
+  .cluster-label.beat { transform: translateX(-50%) !important; }
+  .beat.draw, .beat.draw.slow { stroke-dashoffset: 0 !important; }
+  .chip-wrap.in .chip, .dot.drift-out.in, .qmark.in span, .halo.in, .orbit.in,
+  .run-btn.in, .loop-node.is-live, .captions.swap p { animation: none !important; }
+  .particles, .zoom-cloud { display: none !important; }
+  .dot.absorb.in { animation: fadeOut 1s ease forwards !important; }
+  .cdot, .halo-blob { transition: opacity .5s ease !important; }
+  .cdot { transform: translate(var(--x1), var(--y1)) !important; background: var(--c) !important; }
+  .scene, .scene.is-active { transition: opacity .5s ease, visibility 0s linear .5s; }
+  .scene.is-active { transition: opacity .5s ease; }
+  .insights.is-focus .insight-card.is-key { border-color: var(--orange); }
+}
+@keyframes fadeOut { to { opacity: 0; } }
+
+</style>
+</head>
+<body>
+
+  <!-- Icon library. Flat, generic, hand-drawn geometry. Referenced with <use href="#id">. -->
+  <svg class="sprite" aria-hidden="true" focusable="false">
+    <defs>
+      <symbol id="i-user" viewBox="0 0 24 24"><circle cx="12" cy="8" r="4"/><path d="M4 21c0-4.4 3.6-8 8-8s8 3.6 8 8"/></symbol>
+      <symbol id="i-users" viewBox="0 0 24 24"><circle cx="9" cy="8" r="3.5"/><path d="M2.5 20c0-3.6 2.9-6.5 6.5-6.5s6.5 2.9 6.5 6.5"/><circle cx="17" cy="9" r="2.8"/><path d="M16.2 13.6c3.1-.3 5.3 2.1 5.3 5.4"/></symbol>
+      <symbol id="i-eye" viewBox="0 0 24 24"><path d="M2 12s3.6-7 10-7 10 7 10 7-3.6 7-10 7S2 12 2 12z"/><circle cx="12" cy="12" r="3"/></symbol>
+      <symbol id="i-cursor" viewBox="0 0 24 24"><path d="M5 3.5l6.5 17 2.4-7.1 7.1-2.4z"/></symbol>
+      <symbol id="i-cart" viewBox="0 0 24 24"><path d="M2.5 4h2.8l2.3 10.5h10.8L20.8 7.5H6.2"/><circle cx="9" cy="19" r="1.6"/><circle cx="17" cy="19" r="1.6"/></symbol>
+      <symbol id="i-globe" viewBox="0 0 24 24"><circle cx="12" cy="12" r="9"/><path d="M3 12h18M12 3c2.5 2.6 3.8 5.6 3.8 9s-1.3 6.4-3.8 9c-2.5-2.6-3.8-5.6-3.8-9S9.5 5.6 12 3z"/></symbol>
+      <symbol id="i-file" viewBox="0 0 24 24"><path d="M6 3h8l4 4v14H6z"/><path d="M14 3v4h4M9 12h6M9 16h6"/></symbol>
+      <symbol id="i-signal" viewBox="0 0 24 24"><circle cx="12" cy="12" r="2"/><path d="M7.8 7.8a6 6 0 000 8.4M16.2 7.8a6 6 0 010 8.4M4.9 4.9a10 10 0 000 14.2M19.1 4.9a10 10 0 010 14.2"/></symbol>
+      <symbol id="i-database" viewBox="0 0 24 24"><ellipse cx="12" cy="5.5" rx="7" ry="2.5"/><path d="M5 5.5v13c0 1.4 3.1 2.5 7 2.5s7-1.1 7-2.5v-13M5 12c0 1.4 3.1 2.5 7 2.5s7-1.1 7-2.5"/></symbol>
+      <symbol id="i-layers" viewBox="0 0 24 24"><path d="M12 3l9 5-9 5-9-5z"/><path d="M3 12.5l9 5 9-5M3 16.5l9 5 9-5"/></symbol>
+      <symbol id="i-shield" viewBox="0 0 24 24"><path d="M12 3l8 3v6c0 4.6-3.4 8.2-8 9-4.6-.8-8-4.4-8-9V6z"/><path d="M8.5 12l2.5 2.5 4.5-5"/></symbol>
+      <symbol id="i-lock" viewBox="0 0 24 24"><rect x="5" y="10.5" width="14" height="10" rx="2"/><path d="M8 10.5V7.5a4 4 0 018 0v3"/><circle cx="12" cy="15.5" r="1.2"/></symbol>
+      <symbol id="i-route" viewBox="0 0 24 24"><circle cx="5" cy="18" r="2.2"/><circle cx="19" cy="6" r="2.2"/><path d="M7.2 18H15a3 3 0 000-6H9a3 3 0 010-6h7.8"/></symbol>
+      <symbol id="i-heart" viewBox="0 0 24 24"><path d="M12 20C4.5 14.6 3 10.2 5.6 7.1c2-2.3 4.9-1.9 6.4.6 1.5-2.5 4.4-2.9 6.4-.6C21 10.2 19.5 14.6 12 20z"/></symbol>
+      <symbol id="i-overlap" viewBox="0 0 24 24"><circle cx="9" cy="12" r="6"/><circle cx="15" cy="12" r="6"/></symbol>
+      <symbol id="i-box" viewBox="0 0 24 24"><path d="M3.5 7.5L12 3l8.5 4.5v9L12 21l-8.5-4.5z"/><path d="M3.5 7.5L12 12l8.5-4.5M12 12v9"/></symbol>
+      <symbol id="i-store" viewBox="0 0 24 24"><path d="M4.5 11v9h15v-9"/><path d="M3 9.5L5 4h14l2 5.5a2.6 2.6 0 01-5 0 4 2.5 0 01-8 0 2.6 2.6 0 01-5 0z"/><path d="M10 20v-4.5h4V20"/></symbol>
+      <symbol id="i-display" viewBox="0 0 24 24"><rect x="3" y="4" width="18" height="12" rx="1.5"/><path d="M9 20h6M12 16v4"/><path d="M6.5 13l3-3.5 2.5 2.5 2-2 3.5 3"/></symbol>
+      <symbol id="i-devices" viewBox="0 0 24 24"><rect x="2.5" y="5" width="12" height="9" rx="1.2"/><rect x="16.5" y="8" width="5" height="11" rx="1"/><path d="M5.5 18.5h6M8.5 14v4.5"/></symbol>
+      <symbol id="i-chart" viewBox="0 0 24 24"><path d="M4 20h16"/><path d="M7 17v-5M12 17V7M17 17v-8"/></symbol>
+      <symbol id="i-gauge" viewBox="0 0 24 24"><path d="M4 17a8 8 0 1116 0"/><path d="M12 17l4-5"/></symbol>
+      <symbol id="i-search" viewBox="0 0 24 24"><circle cx="10.5" cy="10.5" r="6"/><path d="M15 15l5.5 5.5"/></symbol>
+      <symbol id="i-bolt" viewBox="0 0 24 24"><path d="M13 3L5 13.5h6L10 21l8-10.5h-6z"/></symbol>
+      <symbol id="i-sliders" viewBox="0 0 24 24"><path d="M4 6h16M4 12h16M4 18h16"/><circle cx="9" cy="6" r="2.2" fill="#fff"/><circle cx="15" cy="12" r="2.2" fill="#fff"/><circle cx="8" cy="18" r="2.2" fill="#fff"/></symbol>
+      <symbol id="i-arrow" viewBox="0 0 24 24"><path d="M4 12h16M14 6l6 6-6 6"/></symbol>
+      <symbol id="i-check" viewBox="0 0 24 24"><path d="M5 12.5l4.5 4.5L19 7.5"/></symbol>
+      <symbol id="i-up" viewBox="0 0 24 24"><path d="M12 19V5M6 11l6-6 6 6"/></symbol>
+      <symbol id="i-play" viewBox="0 0 24 24"><path d="M7 4.5v15l12-7.5z"/></symbol>
+      <symbol id="i-pause" viewBox="0 0 24 24"><path d="M8 5v14M16 5v14"/></symbol>
+      <symbol id="i-restart" viewBox="0 0 24 24"><path d="M4 12a8 8 0 108-8H8"/><path d="M10.5 1.5L7.5 4l3 2.5"/></symbol>
+      <symbol id="i-cc" viewBox="0 0 24 24"><rect x="2.5" y="5" width="19" height="14" rx="2.5"/><path d="M10.5 10.2a2.6 2.6 0 100 3.6M17 10.2a2.6 2.6 0 100 3.6"/></symbol>
+    </defs>
+  </svg>
+
+  <main class="viewport">
+    <!--
+      The stage is a fixed 1920 x 1080 composition. script.js scales it to fit
+      the window while keeping the 16:9 ratio.
+    -->
+    <div class="stage" id="stage" role="region" aria-roledescription="animated explainer" aria-label="From Signals to Insight: Amazon Marketing Cloud">
+      <h1 class="sr-only">From Signals to Insight: Amazon Marketing Cloud</h1>
+      <p class="scene-count" id="scene-count" aria-hidden="true">Scene 1 of 6</p>
+
+      <!-- ============ Scene 1: The question (0:00 to 0:07) ============ -->
+      <section class="scene" id="scene-1" aria-labelledby="s1-title">
+        <p class="eyebrow beat rise" data-at="0.1"><span>01</span> The question</p>
+        <h2 class="headline beat rise" id="s1-title" data-at="0.3">Which customers are responding, and why?</h2>
+
+        <!-- Broken links show that the data is not connected -->
+        <svg class="layer" viewBox="0 0 1920 1080" aria-hidden="true" focusable="false">
+          <g class="broken-links beat fade" data-at="3.2">
+            <line x1="826" y1="507" x2="612" y2="421"/>
+            <line x1="811" y1="582" x2="573" y2="616"/>
+            <line x1="1111" y1="504" x2="1353" y2="414"/>
+            <line x1="1119" y1="579" x2="1373" y2="609"/>
+            <line x1="898" y1="662" x2="854" y2="742"/>
+          </g>
+        </svg>
+
+        <!-- Scattered signal dots, generated in script.js -->
+        <div class="fill dot-field" id="s1-dots" aria-hidden="true"></div>
+
+        <div class="marketer beat pop" data-at="0.8">
+          <span class="marketer-badge"><svg class="ico" aria-hidden="true"><use href="#i-user"/></svg></span>
+          <span class="marketer-label">You</span>
+        </div>
+
+        <ul class="fill chip-list" aria-label="Scattered data sources">
+          <li class="chip-wrap beat pop" data-at="1.4" style="left:250px;top:300px">
+            <div class="chip" style="--dx:-26px;--dy:-12px">
+              <span class="icon-badge blue"><svg class="ico" aria-hidden="true"><use href="#i-eye"/></svg></span>Ad impressions
+              <span class="qmark beat pop" data-at="3.8" aria-hidden="true"><span>?</span></span>
+            </div>
+          </li>
+          <li class="chip-wrap beat pop" data-at="1.8" style="left:1390px;top:290px">
+            <div class="chip" style="--dx:26px;--dy:-12px">
+              <span class="icon-badge blue"><svg class="ico" aria-hidden="true"><use href="#i-cursor"/></svg></span>Clicks
+              <span class="qmark beat pop" data-at="4.0" aria-hidden="true"><span>?</span></span>
+            </div>
+          </li>
+          <li class="chip-wrap beat pop" data-at="2.2" style="left:1410px;top:590px">
+            <div class="chip" style="--dx:28px;--dy:6px">
+              <span class="icon-badge orange"><svg class="ico" aria-hidden="true"><use href="#i-cart"/></svg></span>Purchases
+              <span class="qmark beat pop" data-at="4.2" aria-hidden="true"><span>?</span></span>
+            </div>
+          </li>
+          <li class="chip-wrap beat pop" data-at="2.6" style="left:190px;top:600px">
+            <div class="chip" style="--dx:-28px;--dy:6px">
+              <span class="icon-badge teal"><svg class="ico" aria-hidden="true"><use href="#i-globe"/></svg></span>Website visits
+              <span class="qmark beat pop" data-at="4.4" aria-hidden="true"><span>?</span></span>
+            </div>
+          </li>
+          <li class="chip-wrap beat pop" data-at="3.0" style="left:630px;top:770px">
+            <div class="chip" style="--dx:-12px;--dy:18px">
+              <span class="icon-badge slate"><svg class="ico" aria-hidden="true"><use href="#i-file"/></svg></span>Customer records
+              <span class="qmark beat pop" data-at="4.6" aria-hidden="true"><span>?</span></span>
+            </div>
+          </li>
+        </ul>
+      </section>
+
+      <!-- ============ Scene 2: Bring the data together (0:07 to 0:16) ============ -->
+      <section class="scene" id="scene-2" aria-labelledby="s2-title">
+        <p class="eyebrow beat rise" data-at="0.1"><span>02</span> Connect</p>
+        <h2 class="headline beat rise" id="s2-title" data-at="0.3">Bring your signals together, privately.</h2>
+
+        <svg class="layer" viewBox="0 0 1920 1080" aria-hidden="true" focusable="false">
+          <!-- Privacy boundary around the clean room -->
+          <ellipse class="halo beat fade" data-at="4.6" cx="1305" cy="565" rx="390" ry="285"/>
+          <!-- Three data streams. Particles are generated from each path in script.js -->
+          <path class="stream beat draw" data-at="2.4" pathLength="1" style="--c:var(--blue)"
+                data-particles="4" data-particles-at="3.4"
+                d="M630 385 C 830 385 880 555 1085 555"/>
+          <path class="stream beat draw" data-at="2.8" pathLength="1" style="--c:var(--teal)"
+                data-particles="4" data-particles-at="3.7"
+                d="M630 560 C 830 560 880 615 1060 615"/>
+          <path class="stream beat draw" data-at="3.2" pathLength="1" style="--c:var(--orange)"
+                data-particles="4" data-particles-at="4.0"
+                d="M630 735 C 830 735 880 680 1085 680"/>
+        </svg>
+
+        <!-- Dots from Scene 1 flow into the cloud, generated in script.js -->
+        <div class="fill dot-field" id="s2-dots" aria-hidden="true"></div>
+        <div class="fill particle-layer" aria-hidden="true"></div>
+
+        <ul class="fill source-list" aria-label="Data sources">
+          <li class="source beat left" data-at="1.0" style="top:330px">
+            <span class="icon-badge blue"><svg class="ico" aria-hidden="true"><use href="#i-signal"/></svg></span>
+            <span>Amazon Ads signals</span>
+          </li>
+          <li class="source beat left" data-at="1.4" style="top:505px">
+            <span class="icon-badge teal"><svg class="ico" aria-hidden="true"><use href="#i-database"/></svg></span>
+            <span>Advertiser first-party data</span>
+          </li>
+          <li class="source beat left" data-at="1.8" style="top:680px">
+            <span class="icon-badge orange"><svg class="ico" aria-hidden="true"><use href="#i-layers"/></svg></span>
+            <span>Approved third-party inputs</span>
+          </li>
+        </ul>
+
+        <div class="cloud beat pop" data-at="0.4">
+          <svg viewBox="0 0 640 420" aria-hidden="true" focusable="false">
+            <path class="cloud-shape" d="M130 400 C 60 400 10 350 10 285 C 10 220 60 175 120 172 C 130 90 195 35 275 35 C 340 35 390 70 412 120 C 435 105 462 98 490 98 C 565 98 625 155 628 228 C 640 300 600 400 520 400 Z"/>
+          </svg>
+          <p class="cloud-text"><strong>AMC</strong><span>Secure clean room</span></p>
+        </div>
+
+        <p class="shield-pill beat pop" data-at="5.0">
+          <svg class="ico" aria-hidden="true"><use href="#i-shield"/></svg>Privacy-safe
+        </p>
+      </section>
+
+      <!-- ============ Scene 3: Analyze safely (0:16 to 0:25) ============ -->
+      <section class="scene" id="scene-3" aria-labelledby="s3-title">
+        <p class="eyebrow beat rise" data-at="0.3"><span>03</span> Analyze</p>
+        <h2 class="headline beat rise" id="s3-title" data-at="0.5">Analyze insights, not individual identities.</h2>
+
+        <!-- Gentle zoom: the Scene 2 cloud scales up and opens into the clean room -->
+        <div class="zoom-cloud beat zoom" data-at="0" aria-hidden="true">
+          <svg viewBox="0 0 640 420" focusable="false">
+            <path class="cloud-shape" d="M130 400 C 60 400 10 350 10 285 C 10 220 60 175 120 172 C 130 90 195 35 275 35 C 340 35 390 70 412 120 C 435 105 462 98 490 98 C 565 98 625 155 628 228 C 640 300 600 400 520 400 Z"/>
+          </svg>
+        </div>
+
+        <div class="room beat pop" data-at="0.6" aria-hidden="true"></div>
+        <p class="room-tag beat rise" data-at="1.0">
+          <svg class="ico" aria-hidden="true"><use href="#i-lock"/></svg>Inside the AMC clean room
+        </p>
+
+        <!-- Column 1: anonymous dots group into clusters -->
+        <p class="col-title beat fade" data-at="1.3" style="left:160px">1. Pseudonymized signals</p>
+        <div class="fill cluster-field beat fade" id="s3-field" data-at="1.4" data-cue="2.3:is-grouped" aria-hidden="true">
+          <span class="halo-blob" style="left:215px;top:385px;--c:var(--blue-tint)"></span>
+          <span class="halo-blob" style="left:485px;top:385px;--c:var(--teal-tint)"></span>
+          <span class="halo-blob" style="left:350px;top:605px;--c:var(--orange-tint)"></span>
+        </div>
+        <span class="cluster-label beat fade" data-at="3.4" style="left:300px;top:580px">Discover</span>
+        <span class="cluster-label beat fade" data-at="3.6" style="left:570px;top:580px">Consider</span>
+        <span class="cluster-label beat fade" data-at="3.8" style="left:435px;top:800px">Purchase</span>
+
+        <svg class="ico col-arrow beat fade" data-at="3.6" style="left:712px;top:560px" aria-hidden="true"><use href="#i-arrow"/></svg>
+
+        <!-- Column 2: a minimal query interface -->
+        <p class="col-title beat fade" data-at="3.6" style="left:770px">2. Query</p>
+        <div class="query-card beat rise" data-at="3.7">
+          <div class="code" aria-label="Example query: count users by journey stage">
+            <span class="code-line beat fade" data-at="4.1"><b>SELECT</b> stage,</span>
+            <span class="code-line indent beat fade" data-at="4.4"><b>COUNT</b>(*) AS users</span>
+            <span class="code-line beat fade" data-at="4.7"><b>FROM</b> ad_signals</span>
+            <span class="code-line beat fade" data-at="5.0"><b>GROUP BY</b> stage</span>
+          </div>
+          <span class="run-btn beat pop" data-at="5.4"><svg class="ico" aria-hidden="true"><use href="#i-play"/></svg>Run query</span>
+          <span class="status beat fade" data-at="5.9"><svg class="ico" aria-hidden="true"><use href="#i-check"/></svg>Aggregated output only</span>
+        </div>
+
+        <svg class="ico col-arrow beat fade" data-at="5.9" style="left:1180px;top:560px" aria-hidden="true"><use href="#i-arrow"/></svg>
+
+        <!-- Column 3: aggregated bar chart -->
+        <p class="col-title beat fade" data-at="5.9" style="left:1230px">3. Aggregate result</p>
+        <figure class="chart-card beat rise" data-at="6.0">
+          <figcaption class="sr-only">Illustrative bar chart of users by journey stage: Discover 100 percent, Consider 58 percent, Purchase 27 percent.</figcaption>
+          <div class="bars" aria-hidden="true">
+            <div class="bar-col"><span class="bar-val beat fade" data-at="6.7">100%</span><span class="bar beat grow" data-at="6.3" style="height:220px;--c:var(--blue)"></span></div>
+            <div class="bar-col"><span class="bar-val beat fade" data-at="6.9">58%</span><span class="bar beat grow" data-at="6.5" style="height:128px;--c:var(--teal)"></span></div>
+            <div class="bar-col"><span class="bar-val beat fade" data-at="7.1">27%</span><span class="bar beat grow" data-at="6.7" style="height:60px;--c:var(--orange)"></span></div>
+          </div>
+          <div class="bar-labels" aria-hidden="true"><span>Discover</span><span>Consider</span><span>Purchase</span></div>
+          <p class="privacy-chip beat pop" data-at="7.4"><svg class="ico" aria-hidden="true"><use href="#i-shield"/></svg>No names. No individual profiles.</p>
+        </figure>
+      </section>
+
+      <!-- ============ Scene 4: Turn insight into action (0:25 to 0:35) ============ -->
+      <section class="scene" id="scene-4" aria-labelledby="s4-title">
+        <p class="eyebrow beat rise" data-at="0.1"><span>04</span> Activate</p>
+        <h2 class="headline beat rise" id="s4-title" data-at="0.3">Turn insight into action.</h2>
+
+        <svg class="layer" viewBox="0 0 1920 1080" aria-hidden="true" focusable="false">
+          <path class="link beat draw" data-at="3.8" pathLength="1" d="M960 410 L960 472"/>
+          <path class="stream thin beat draw" data-at="5.0" pathLength="1" style="--c:var(--orange)" data-particles="2" data-particles-at="5.9" data-dur="1.8" d="M960 612 C 960 670 420 650 420 712"/>
+          <path class="stream thin beat draw" data-at="5.1" pathLength="1" style="--c:var(--orange)" data-particles="2" data-particles-at="6.0" data-dur="1.8" d="M960 612 C 960 670 780 660 780 712"/>
+          <path class="stream thin beat draw" data-at="5.2" pathLength="1" style="--c:var(--orange)" data-particles="2" data-particles-at="6.1" data-dur="1.8" d="M960 612 C 960 670 1140 660 1140 712"/>
+          <path class="stream thin beat draw" data-at="5.3" pathLength="1" style="--c:var(--orange)" data-particles="2" data-particles-at="6.2" data-dur="1.8" d="M960 612 C 960 670 1500 650 1500 712"/>
+        </svg>
+        <div class="fill particle-layer" aria-hidden="true"></div>
+
+        <!-- The aggregate chart from Scene 3 opens into three insight cards -->
+        <span class="chart-glyph beat pop" data-at="0.2" data-out="1.1" aria-hidden="true"><svg class="ico"><use href="#i-chart"/></svg></span>
+
+        <ul class="fill insights" data-cue="3.4:is-focus" aria-label="Insights">
+          <li class="insight-card beat from-center" data-at="0.9" style="left:190px;--fx:540px">
+            <span class="icon-badge blue"><svg class="ico" aria-hidden="true"><use href="#i-route"/></svg></span>
+            <span><strong>Path to conversion</strong><small>Touchpoints before purchase</small></span>
+          </li>
+          <li class="insight-card is-key beat from-center" data-at="1.05" style="left:730px;--fx:0px">
+            <span class="icon-badge orange"><svg class="ico" aria-hidden="true"><use href="#i-heart"/></svg></span>
+            <span><strong>Loyal customers</strong><small>Customers who buy again</small></span>
+          </li>
+          <li class="insight-card beat from-center" data-at="1.2" style="left:1270px;--fx:-540px">
+            <span class="icon-badge teal"><svg class="ico" aria-hidden="true"><use href="#i-overlap"/></svg></span>
+            <span><strong>Audience overlap</strong><small>Where audiences intersect</small></span>
+          </li>
+        </ul>
+
+        <div class="audience beat pop" data-at="4.2" aria-hidden="true">
+          <svg class="ico"><use href="#i-users"/></svg>
+        </div>
+        <p class="audience-label beat left" data-at="4.6">Custom audience</p>
+
+        <ul class="fill campaigns" aria-label="Campaign types">
+          <li class="campaign beat rise" data-at="5.6" style="left:270px">
+            <span class="campaign-icon"><svg class="ico" aria-hidden="true"><use href="#i-box"/></svg><span class="tick beat pop" data-at="7.4" aria-hidden="true"><svg class="ico"><use href="#i-check"/></svg></span></span>
+            Sponsored Products
+          </li>
+          <li class="campaign beat rise" data-at="5.8" style="left:630px">
+            <span class="campaign-icon"><svg class="ico" aria-hidden="true"><use href="#i-store"/></svg><span class="tick beat pop" data-at="7.55" aria-hidden="true"><svg class="ico"><use href="#i-check"/></svg></span></span>
+            Sponsored Brands
+          </li>
+          <li class="campaign beat rise" data-at="6.0" style="left:990px">
+            <span class="campaign-icon"><svg class="ico" aria-hidden="true"><use href="#i-display"/></svg><span class="tick beat pop" data-at="7.7" aria-hidden="true"><svg class="ico"><use href="#i-check"/></svg></span></span>
+            Sponsored Display
+          </li>
+          <li class="campaign beat rise" data-at="6.2" style="left:1350px">
+            <span class="campaign-icon"><svg class="ico" aria-hidden="true"><use href="#i-devices"/></svg><span class="tick beat pop" data-at="7.85" aria-hidden="true"><svg class="ico"><use href="#i-check"/></svg></span></span>
+            Amazon DSP
+          </li>
+        </ul>
+      </section>
+
+      <!-- ============ Scene 5: Keep improving (0:35 to 0:45) ============ -->
+      <section class="scene" id="scene-5" aria-labelledby="s5-title">
+        <p class="eyebrow beat rise" data-at="0.1"><span>05</span> Improve</p>
+        <h2 class="headline beat rise" id="s5-title" data-at="0.3">Measure. Learn. Activate. Optimize.</h2>
+
+        <svg class="layer" viewBox="0 0 1920 1080" aria-hidden="true" focusable="false">
+          <circle class="loop-track beat fade" data-at="0.4" cx="560" cy="560" r="230"/>
+          <circle class="loop-arc beat draw slow" data-at="0.6" pathLength="1" cx="560" cy="560" r="230" transform="rotate(-90 560 560)"/>
+          <g class="chevrons beat fade" data-at="2.8">
+            <path d="M-8 -11 L5 0 L-8 11" transform="translate(722.6 397.4) rotate(45)"/>
+            <path d="M-8 -11 L5 0 L-8 11" transform="translate(722.6 722.6) rotate(135)"/>
+            <path d="M-8 -11 L5 0 L-8 11" transform="translate(397.4 722.6) rotate(225)"/>
+            <path d="M-8 -11 L5 0 L-8 11" transform="translate(397.4 397.4) rotate(315)"/>
+          </g>
+          <!-- Orbiting marker keeps the loop moving in the background -->
+          <g class="orbit beat fade" data-at="3.2"><circle cx="560" cy="330" r="13"/></g>
+        </svg>
+
+        <p class="loop-center beat fade" data-at="0.8"><strong>AMC</strong><span>learning loop</span></p>
+
+        <ol class="fill loop-steps" aria-label="Continuous improvement loop">
+          <li class="loop-node beat pop" data-at="1.0" data-cue="3.2:is-live" style="left:445px;top:296px;--i:0;--c:var(--blue)"><svg class="ico" aria-hidden="true"><use href="#i-gauge"/></svg>Measure</li>
+          <li class="loop-node beat pop" data-at="1.5" data-cue="3.2:is-live" style="left:675px;top:526px;--i:1;--c:var(--teal)"><svg class="ico" aria-hidden="true"><use href="#i-search"/></svg>Analyze</li>
+          <li class="loop-node beat pop" data-at="2.0" data-cue="3.2:is-live" style="left:445px;top:756px;--i:2;--c:var(--orange-ink)"><svg class="ico" aria-hidden="true"><use href="#i-bolt"/></svg>Activate</li>
+          <li class="loop-node beat pop" data-at="2.5" data-cue="3.2:is-live" style="left:215px;top:526px;--i:3;--c:var(--blue)"><svg class="ico" aria-hidden="true"><use href="#i-sliders"/></svg>Optimize</li>
+        </ol>
+
+        <!-- Simple dashboard with a rising trend (illustrative values) -->
+        <figure class="dashboard beat rise" data-at="1.2">
+          <figcaption class="dash-head"><strong>Campaign performance</strong><span class="tag">Illustrative</span></figcaption>
+          <div class="kpis">
+            <div class="kpi beat rise" data-at="2.0"><span>Reach</span><b><svg class="ico" aria-hidden="true"><use href="#i-up"/></svg>18%</b></div>
+            <div class="kpi beat rise" data-at="2.2"><span>Conversions</span><b><svg class="ico" aria-hidden="true"><use href="#i-up"/></svg>24%</b></div>
+            <div class="kpi beat rise" data-at="2.4"><span>Ad efficiency</span><b><svg class="ico" aria-hidden="true"><use href="#i-up"/></svg>12%</b></div>
+          </div>
+          <svg class="trend" viewBox="0 0 700 300" aria-hidden="true" focusable="false">
+            <g class="grid"><line x1="0" y1="40" x2="700" y2="40"/><line x1="0" y1="115" x2="700" y2="115"/><line x1="0" y1="190" x2="700" y2="190"/><line x1="0" y1="265" x2="700" y2="265"/></g>
+            <path class="trend-area beat fade" data-at="4.6" d="M20 250 L110 232 L200 238 L290 200 L380 185 L470 150 L560 122 L670 72 L670 265 L20 265 Z"/>
+            <path class="trend-line beat draw slow" data-at="3.0" pathLength="1" d="M20 250 L110 232 L200 238 L290 200 L380 185 L470 150 L560 122 L670 72"/>
+            <circle class="trend-end beat fade" data-at="5.0" cx="670" cy="72" r="11"/>
+          </svg>
+          <p class="axis-note">Performance over time</p>
+        </figure>
+      </section>
+
+      <!-- ============ Scene 6: Closing (0:45 to 0:50) ============ -->
+      <section class="scene" id="scene-6" aria-labelledby="s6-title">
+        <ol class="fill flow" aria-label="Signals, then insight, then action">
+          <li class="flow-pill beat pop" data-at="0.2" style="left:420px;--c:var(--blue)"><svg class="ico" aria-hidden="true"><use href="#i-signal"/></svg>Signals</li>
+          <li class="flow-pill beat pop" data-at="0.6" style="left:820px;--c:var(--teal)"><svg class="ico" aria-hidden="true"><use href="#i-chart"/></svg>Insight</li>
+          <li class="flow-pill beat pop" data-at="1.0" style="left:1220px;--c:var(--orange)"><svg class="ico" aria-hidden="true"><use href="#i-bolt"/></svg>Action</li>
+        </ol>
+        <svg class="ico flow-arrow beat fade" data-at="0.45" style="left:732px" aria-hidden="true"><use href="#i-arrow"/></svg>
+        <svg class="ico flow-arrow beat fade" data-at="0.85" style="left:1132px" aria-hidden="true"><use href="#i-arrow"/></svg>
+
+        <h2 class="closing-title" id="s6-title">
+          <span class="beat rise" data-at="1.4">From signals to insight.</span>
+          <span class="accent beat rise" data-at="1.9">From insight to action.</span>
+        </h2>
+        <p class="closing-sub beat rise" data-at="2.6">Amazon Marketing Cloud</p>
+        <p class="closing-credit beat fade" data-at="3.1">Instructional concept by Zhenyu He</p>
+        <p class="closing-note beat fade" data-at="3.4">Portfolio concept. Not an official Amazon Ads product.</p>
+      </section>
+
+      <!-- Captions: updated per scene by script.js and announced politely -->
+      <div class="captions" id="captions" role="region" aria-label="Captions">
+        <p id="caption-text" aria-live="polite" aria-atomic="true"></p>
+      </div>
+
+      <!-- Overall progress with scene markers -->
+      <div class="progress" id="progress" role="progressbar" aria-label="Animation progress"
+           aria-valuemin="0" aria-valuemax="50" aria-valuenow="0" aria-valuetext="0 of 50 seconds">
+        <div class="progress-fill" id="progress-fill"></div>
+      </div>
+    </div>
+  </main>
+
+  <!-- Playback controls (outside the stage so they never appear in a clean recording) -->
+  <div class="controls" id="controls" role="toolbar" aria-label="Playback controls">
+    <button type="button" id="btn-play" aria-keyshortcuts="Space K" title="Play or pause (Space)">
+      <svg class="ico" aria-hidden="true"><use id="play-icon" href="#i-pause"/></svg><span id="play-label">Pause</span>
+    </button>
+    <button type="button" id="btn-restart" aria-keyshortcuts="R" title="Restart (R)">
+      <svg class="ico" aria-hidden="true"><use href="#i-restart"/></svg>Restart
+    </button>
+    <button type="button" id="btn-cc" aria-pressed="true" aria-keyshortcuts="C" title="Toggle captions (C)">
+      <svg class="ico" aria-hidden="true"><use href="#i-cc"/></svg>Captions
+    </button>
+    <span class="time" id="time" aria-hidden="true">0:00 / 0:50</span>
+  </div>
+
+  <p class="sr-only">Keyboard shortcuts: Space or K plays and pauses, R restarts, C toggles captions, Left and Right arrows jump between scenes.</p>
+
+  <script>
+/*
+  From Signals to Insight: Amazon Marketing Cloud
+  Timeline engine for the instructional motion graphic.
+
+  How it works
+  1. SCENES lists each scene's start and end time (seconds) and its caption.
+  2. A requestAnimationFrame loop advances one clock (elapsed seconds).
+  3. Inside the active scene, every element with data-at="s" receives the
+     class "in" when the scene's local time reaches s. CSS turns that class
+     into a fade, rise, pop, or stroke draw. data-out="s" removes it again.
+  4. Elements with data-cue="s:className" receive that class at time s.
+     This drives state changes such as clustering or highlighting.
+  5. Pausing freezes the clock and all CSS keyframe animations.
+
+  URL options
+  ?record   hides the controls and cursor, holds on a clean first frame,
+            and starts when you press Space, Enter, or click.
+  ?t=12     starts playback at 12 seconds (handy for reviewing one scene).
+*/
+(() => {
+  'use strict';
+
+  // ---------- Scene timing and captions ----------
+  const SCENES = [
+    { id: 'scene-1', start: 0,  end: 7,
+      caption: 'As an advertiser, you need to understand how advertising influences the customer journey. But the data is scattered in different systems and locations.' },
+    { id: 'scene-2', start: 7,  end: 16,
+      caption: 'Amazon Marketing Cloud brings your advertising signals and approved first-party data together in one secure, privacy-safe clean room.' },
+    { id: 'scene-3', start: 16, end: 25,
+      caption: 'Inside the clean room, you can analyze pseudonymized signals and see patterns across the customer journey. The focus stays on aggregate insights, not individual customer identities.' },
+    { id: 'scene-4', start: 25, end: 35,
+      caption: 'You can uncover insights such as paths to conversion, loyal customers, and audience overlap. Then you can build custom audiences and activate them across your Amazon Ads campaigns.' },
+    { id: 'scene-5', start: 35, end: 45,
+      caption: 'By connecting measurement to activation, AMC helps you make more informed decisions and continuously improve campaign performance.' },
+    { id: 'scene-6', start: 45, end: 50,
+      caption: 'Amazon Marketing Cloud: turn privacy-safe signals into insight, audiences, and action.' }
+  ];
+  const TOTAL = SCENES[SCENES.length - 1].end;
+
+  // ---------- Element references ----------
+  const $ = (id) => document.getElementById(id);
+  const stage = $('stage');
+  const captionBox = $('captions');
+  const captionText = $('caption-text');
+  const counter = $('scene-count');
+  const progress = $('progress');
+  const progressFill = $('progress-fill');
+  const timeEl = $('time');
+  const controls = $('controls');
+  const btnPlay = $('btn-play');
+  const btnRestart = $('btn-restart');
+  const btnCC = $('btn-cc');
+  const playIcon = $('play-icon');
+  const playLabel = $('play-label');
+
+  // ---------- Helpers ----------
+  // Small seeded random generator so the "random" layouts are identical on every run.
+  function seeded(seed) {
+    return () => {
+      seed = (seed + 0x6D2B79F5) | 0;
+      let t = Math.imul(seed ^ (seed >>> 15), 1 | seed);
+      t = (t + Math.imul(t ^ (t >>> 7), 61 | t)) ^ t;
+      return ((t ^ (t >>> 14)) >>> 0) / 4294967296;
+    };
+  }
+  function el(tag, className, styles, attrs) {
+    const node = document.createElement(tag);
+    node.className = className;
+    if (styles) node.setAttribute('style', styles);
+    if (attrs) Object.entries(attrs).forEach(([k, v]) => node.setAttribute(k, v));
+    return node;
+  }
+  const fmt = (s) => `${Math.floor(s / 60)}:${String(Math.floor(s % 60)).padStart(2, '0')}`;
+
+  // ---------- Generated visuals ----------
+  const DOT_COLORS = ['var(--blue)', 'var(--teal)', 'var(--orange)', 'var(--slate)'];
+  const MARKETER = { x: 960, y: 560 };   // Scene 1 center
+  const CLOUD = { x: 1300, y: 580 };     // Scene 2 cloud center
+
+  // Scattered abstract data points shared by Scene 1 (drift apart) and Scene 2 (flow into AMC).
+  function buildScatter() {
+    const rand = seeded(11);
+    const pts = [];
+    let guard = 0;
+    while (pts.length < 28 && guard++ < 2000) {
+      const x = 150 + rand() * 1620;
+      const y = 250 + rand() * 610;
+      if (Math.abs(x - MARKETER.x) < 240 && Math.abs(y - MARKETER.y) < 200) continue; // keep the marketer clear
+      if (pts.some((p) => Math.hypot(p.x - x, p.y - y) < 80)) continue;               // avoid clumps
+      pts.push({ x, y, size: 10 + Math.round(rand() * 10), color: DOT_COLORS[pts.length % 4] });
+    }
+
+    const field1 = $('s1-dots');
+    const field2 = $('s2-dots');
+    pts.forEach((p, i) => {
+      const base = `left:${p.x}px;top:${p.y}px;width:${p.size}px;height:${p.size}px;background:${p.color};`;
+      // Scene 1: fade in, then drift slowly away from the marketer (fragmentation).
+      const len = Math.hypot(p.x - MARKETER.x, p.y - MARKETER.y) || 1;
+      const push = 26 + rand() * 18;
+      field1.appendChild(el('span', 'dot beat drift-out',
+        `${base}--dx:${((p.x - MARKETER.x) / len) * push}px;--dy:${((p.y - MARKETER.y) / len) * push}px;--dur:${5 + rand() * 2}s`,
+        { 'data-at': (0.5 + i * 0.05).toFixed(2) }));
+      // Scene 2: the same points flow into the cloud.
+      field2.appendChild(el('span', 'dot beat absorb',
+        `${base}--tx:${CLOUD.x - p.x}px;--ty:${CLOUD.y - p.y}px;--d:${(i * 0.035).toFixed(3)}s`,
+        { 'data-at': '0.1' }));
+    });
+  }
+
+  // Scene 3: anonymous dots that start scattered and group into three journey clusters.
+  function buildClusters() {
+    const field = $('s3-field');
+    const centers = [
+      { x: 300, y: 470, c: 'var(--blue)' },
+      { x: 570, y: 470, c: 'var(--teal)' },
+      { x: 435, y: 690, c: 'var(--orange)' }
+    ];
+    const rand = seeded(5);
+    for (let i = 0; i < 42; i++) {
+      const k = centers[i % 3];
+      const a = rand() * Math.PI * 2;
+      const d = 10 + Math.sqrt(rand()) * 60;
+      const x0 = 190 + rand() * 490, y0 = 390 + rand() * 420;
+      const x1 = k.x + Math.cos(a) * d, y1 = k.y + Math.sin(a) * d;
+      field.appendChild(el('span', 'cdot',
+        `--x0:${x0}px;--y0:${y0}px;--x1:${x1}px;--y1:${y1}px;--c:${k.c};transition-delay:${(rand() * 0.4).toFixed(2)}s,${(0.8 + rand() * 0.3).toFixed(2)}s`));
+    }
+  }
+
+  // Particles that travel along any SVG path marked with data-particles.
+  function buildParticles() {
+    document.querySelectorAll('path[data-particles]').forEach((path) => {
+      const layer = path.closest('.scene').querySelector('.particle-layer');
+      const count = Number(path.dataset.particles);
+      const dur = Number(path.dataset.dur || 2.4);
+      const group = el('div', 'particles', null, { 'data-at': path.dataset.particlesAt });
+      for (let i = 0; i < count; i++) {
+        const p = el('span', 'particle');
+        p.style.offsetPath = `path("${path.getAttribute('d')}")`;
+        p.style.setProperty('--c', path.style.getPropertyValue('--c'));
+        p.style.animationDuration = `${dur}s`;
+        p.style.animationDelay = `${(i * dur) / count}s`;
+        group.appendChild(p);
+      }
+      layer.appendChild(group);
+    });
+  }
+
+  // Scene boundary markers on the progress bar.
+  function buildTicks() {
+    SCENES.slice(1).forEach((s) => {
+      progress.appendChild(el('span', 'progress-tick', `left:${(s.start / TOTAL) * 100}%`));
+    });
+  }
+
+  buildScatter();
+  buildClusters();
+  buildParticles();
+  buildTicks();
+
+  // ---------- Index beats and cues per scene ----------
+  const scenes = SCENES.map((s) => {
+    const node = $(s.id);
+    const beats = [...node.querySelectorAll('[data-at]')].map((b) => ({
+      el: b,
+      at: Number(b.dataset.at),
+      out: b.dataset.out != null ? Number(b.dataset.out) : Infinity
+    }));
+    const cues = [...node.querySelectorAll('[data-cue]')].flatMap((c) =>
+      c.dataset.cue.split(',').map((pair) => {
+        const [t, cls] = pair.split(':');
+        return { el: c, at: Number(t), cls: cls.trim() };
+      }));
+    return { ...s, node, beats, cues };
+  });
+
+  // ---------- Playback state ----------
+  let elapsed = 0;        // seconds on the master clock
+  let playing = false;
+  let lastNow = null;     // last rAF timestamp while playing
+  let current = -1;       // index of the active scene
+  let lastSecond = -1;
+  let captionsOn = true;
+
+  function resetScene(s) {
+    s.beats.forEach((b) => b.el.classList.remove('in'));
+    s.cues.forEach((c) => c.el.classList.remove(c.cls));
+  }
+
+  function enterScene(idx) {
+    const prev = current;
+    current = idx;
+    scenes.forEach((s, i) => {
+      const active = i === idx;
+      s.node.classList.toggle('is-active', active);
+      s.node.setAttribute('aria-hidden', String(!active));
+      // Leave the outgoing scene intact while it fades; reset the rest so they replay cleanly.
+      if (!active && i !== prev) resetScene(s);
+    });
+    captionText.textContent = scenes[idx].caption;
+    captionBox.classList.remove('swap');
+    void captionBox.offsetWidth; // restart the caption fade-in
+    captionBox.classList.add('swap');
+    counter.textContent = `Scene ${idx + 1} of ${scenes.length}`;
+  }
+
+  // Draw the current moment of the timeline.
+  function render() {
+    const t = Math.min(elapsed, TOTAL);
+    let idx = scenes.findIndex((s) => t < s.end);
+    if (idx === -1) idx = scenes.length - 1;
+    if (idx !== current) enterScene(idx);
+
+    const s = scenes[idx];
+    const local = t - s.start;
+    for (const b of s.beats) b.el.classList.toggle('in', local >= b.at && local < b.out);
+    for (const c of s.cues) c.el.classList.toggle(c.cls, local >= c.at);
+
+    progressFill.style.transform = `scaleX(${t / TOTAL})`;
+    const sec = Math.floor(t);
+    if (sec !== lastSecond) {
+      lastSecond = sec;
+      timeEl.textContent = `${fmt(sec)} / ${fmt(TOTAL)}`;
+      progress.setAttribute('aria-valuenow', String(sec));
+      progress.setAttribute('aria-valuetext', `${sec} of ${TOTAL} seconds, scene ${idx + 1} of ${scenes.length}`);
+    }
+  }
+
+  function frame(now) {
+    if (playing) {
+      if (lastNow !== null) elapsed += Math.min((now - lastNow) / 1000, 0.25); // clamp long gaps (hidden tab)
+      lastNow = now;
+      if (elapsed >= TOTAL) {
+        elapsed = TOTAL;
+        setPlaying(false);
+      }
+    }
+    render();
+    requestAnimationFrame(frame);
+  }
+
+  // ---------- Controls ----------
+  function setPlaying(next) {
+    playing = next;
+    lastNow = null;
+    stage.classList.toggle('is-paused', !next);
+    const ended = !next && elapsed >= TOTAL;
+    playIcon.setAttribute('href', next ? '#i-pause' : (ended ? '#i-restart' : '#i-play'));
+    playLabel.textContent = next ? 'Pause' : (ended ? 'Replay' : 'Play');
+    btnPlay.setAttribute('aria-label', next ? 'Pause animation' : (ended ? 'Replay animation' : 'Play animation'));
+  }
+
+  function seek(t) {
+    elapsed = Math.max(0, Math.min(t, TOTAL));
+    scenes.forEach(resetScene);
+    current = -1;
+    lastSecond = -1;
+    render();
+  }
+
+  function togglePlay() {
+    if (!playing && elapsed >= TOTAL) return restart();
+    setPlaying(!playing);
+  }
+
+  function restart() {
+    seek(0);
+    setPlaying(true);
+  }
+
+  function toggleCaptions() {
+    captionsOn = !captionsOn;
+    stage.classList.toggle('captions-off', !captionsOn);
+    btnCC.setAttribute('aria-pressed', String(captionsOn));
+  }
+
+  // Jump to the start of the previous or next scene.
+  function jump(dir) {
+    const target = Math.max(0, Math.min(scenes.length - 1, (current === -1 ? 0 : current) + dir));
+    seek(scenes[target].start);
+  }
+
+  btnPlay.addEventListener('click', togglePlay);
+  btnRestart.addEventListener('click', restart);
+  btnCC.addEventListener('click', toggleCaptions);
+
+  document.addEventListener('keydown', (e) => {
+    if (e.altKey || e.ctrlKey || e.metaKey) return;
+    const onButton = e.target instanceof Element && e.target.closest('button');
+    switch (e.key) {
+      case ' ':
+      case 'Enter':
+        if (onButton) return; // let the focused button handle its own activation
+        e.preventDefault();
+        if (waitingToRecord) return startRecording();
+        togglePlay();
+        break;
+      case 'k': case 'K': togglePlay(); break;
+      case 'r': case 'R': restart(); break;
+      case 'c': case 'C': toggleCaptions(); break;
+      case 'ArrowRight': e.preventDefault(); jump(1); break;
+      case 'ArrowLeft': e.preventDefault(); jump(-1); break;
+      default: break;
+    }
+  });
+
+  // Hide the control bar and cursor after a short idle period while playing.
+  let idleTimer;
+  function wake() {
+    controls.classList.remove('is-idle');
+    document.body.classList.remove('idle');
+    clearTimeout(idleTimer);
+    idleTimer = setTimeout(() => {
+      if (playing) {
+        controls.classList.add('is-idle');
+        document.body.classList.add('idle');
+      }
+    }, 2500);
+  }
+  document.addEventListener('mousemove', wake);
+  document.addEventListener('focusin', wake);
+
+  // ---------- Headline fitting ----------
+  // Keeps every headline on one line. Starts at 72px and steps down (to 58px
+  // at most) only if the installed font renders wider than expected.
+  function fitHeadlines() {
+    document.querySelectorAll('.headline').forEach((h) => {
+      let size = 72;
+      h.style.fontSize = `${size}px`;
+      while (h.scrollWidth > h.clientWidth && size > 58) {
+        size -= 2;
+        h.style.fontSize = `${size}px`;
+      }
+    });
+  }
+  fitHeadlines();
+  if (document.fonts && document.fonts.ready) document.fonts.ready.then(fitHeadlines);
+
+  // ---------- Responsive scaling (keeps 16:9) ----------
+  function fit() {
+    const scale = Math.min(window.innerWidth / 1920, window.innerHeight / 1080);
+    stage.style.setProperty('--scale', String(scale));
+  }
+  window.addEventListener('resize', fit);
+  fit();
+
+  // ---------- Start ----------
+  const params = new URLSearchParams(location.search);
+  const recordMode = params.has('record');
+  let waitingToRecord = false;
+
+  function startRecording() {
+    waitingToRecord = false;
+    seek(0);
+    setPlaying(true);
+  }
+
+  seek(Number(params.get('t')) || 0);
+  if (recordMode) {
+    // Clean first frame: nothing animates until you press Space, Enter, or click.
+    document.body.classList.add('record');
+    waitingToRecord = true;
+    setPlaying(false);
+    document.addEventListener('click', () => { if (waitingToRecord) startRecording(); });
+  } else {
+    setPlaying(true); // autoplay
+    wake();
+  }
+  requestAnimationFrame(frame);
+})();
+
+</script>
+</body>
+</html>
